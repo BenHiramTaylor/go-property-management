@@ -7,7 +7,7 @@ import (
 
 type Property struct {
 	gorm.Model
-	UUID                uuid.UUID
+	ID                  uuid.UUID
 	PropertyType        string
 	Address             string
 	NumberOfBedrooms    uint

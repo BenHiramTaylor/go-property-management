@@ -2,24 +2,37 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/BenHiramTaylor/go-property-management/properties"
-	"github.com/google/uuid"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func main() {
-	fmt.Println("Starting Server...")
+func GetDatabase() (*gorm.DB, error) {
 	db, err := gorm.Open(sqlite.Open("production.db"), &gorm.Config{})
 	if err != nil {
-		panic("failed to connect database")
+		return &gorm.DB{}, fmt.Errorf("failed to connect database")
 	}
-	propertiesTable := db.Table("properties")
+	return db, nil
+}
 
-	// Migrate the schema
-	propertiesTable.AutoMigrate(&properties.Property{})
+func initialiseDB() error {
+	db, err := GetDatabase()
+	if err != nil {
+		return err
+	}
+	err = db.Table("Properties").AutoMigrate(&properties.Property{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
-	// Create
-	propertiesTable.Create(&properties.Property{UUID: uuid.New(), PropertyType: "Apartment", Address: "Steward Building, Steward Street", NumberOfBedrooms: 2, PurchasePriceDollar: 250000})
+func main() {
+	log.Println("Starting Server...")
+	err := initialiseDB()
+	if err != nil {
+		panic(err)
+	}
 }
