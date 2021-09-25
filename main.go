@@ -3,9 +3,12 @@ package main
 import (
 	"fmt"
 	"log"
+	"net/http"
+	"time"
 
 	"github.com/BenHiramTaylor/go-property-management/properties"
 	"github.com/BenHiramTaylor/go-property-management/tennants"
+	"github.com/gorilla/mux"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -18,7 +21,7 @@ func GetDatabase() (*gorm.DB, error) {
 	return db, nil
 }
 
-func initialiseDB() error {
+func InitialiseDB() error {
 	db, err := GetDatabase()
 	if err != nil {
 		return err
@@ -34,10 +37,21 @@ func initialiseDB() error {
 	return nil
 }
 
+func initialiseRoutes() *mux.Router {
+	r := mux.NewRouter()
+	r.HandleFunc("/properties", properties.GetAllProperties).Methods(http.MethodGet)
+	r.HandleFunc("/properties", properties.AddProperty).Methods(http.MethodPost)
+	return r
+}
+
 func main() {
 	log.Println("Starting Server...")
-	err := initialiseDB()
+	err := InitialiseDB()
 	if err != nil {
 		panic(err)
 	}
+	log.Println("Initialised DB")
+	r := initialiseRoutes()
+	srv := &http.Server{Addr: ":80", Handler: r, WriteTimeout: 15 * time.Second, ReadTimeout: 15 * time.Second}
+	log.Fatalln(srv.ListenAndServe())
 }
