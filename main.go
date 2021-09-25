@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/BenHiramTaylor/go-property-management/properties"
+	"github.com/BenHiramTaylor/go-property-management/tennants"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -23,6 +24,10 @@ func initialiseDB() error {
 		return err
 	}
 	err = db.Table("Properties").AutoMigrate(&properties.Property{})
+	if err != nil {
+		return err
+	}
+	err = db.Table("Tennants").AutoMigrate(&tennants.Tennant{})
 	if err != nil {
 		return err
 	}
