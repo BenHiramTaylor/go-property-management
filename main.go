@@ -1,57 +1,49 @@
 package main
 
 import (
-	"fmt"
 	"log"
-	"net/http"
 	"time"
 
+	"github.com/BenHiramTaylor/go-property-management/database"
 	"github.com/BenHiramTaylor/go-property-management/properties"
 	"github.com/BenHiramTaylor/go-property-management/tennants"
-	"github.com/gorilla/mux"
+	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func GetDatabase() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open("production.db"), &gorm.Config{})
-	if err != nil {
-		return &gorm.DB{}, fmt.Errorf("failed to connect database")
-	}
-	return db, nil
-}
-
-func InitialiseDB() error {
-	db, err := GetDatabase()
+func initialiseDB() error {
+	var err error
+	database.DBConn, err = gorm.Open(sqlite.Open("production.db"), &gorm.Config{})
 	if err != nil {
 		return err
 	}
-	err = db.Table("Properties").AutoMigrate(&properties.Property{})
+	err = database.DBConn.Table("Properties").AutoMigrate(&properties.Property{})
 	if err != nil {
 		return err
 	}
-	err = db.Table("Tennants").AutoMigrate(&tennants.Tennant{})
+	err = database.DBConn.Table("Tennants").AutoMigrate(&tennants.Tennant{})
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func initialiseRoutes() *mux.Router {
-	r := mux.NewRouter()
-	r.HandleFunc("/properties", properties.GetAllProperties).Methods(http.MethodGet)
-	r.HandleFunc("/properties", properties.AddProperty).Methods(http.MethodPost)
-	return r
+func initialiseRoutes() *fiber.App {
+	app := fiber.New(fiber.Config{ReadTimeout: 60 * time.Second, WriteTimeout: 120 * time.Second, IdleTimeout: 12 * time.Hour})
+	app.Get("/properties", properties.GetAllProperties)
+	app.Post("/properties", properties.AddProperty)
+	app.Get("/properties/:id", properties.GetIndividualProperty)
+	app.Delete("/properties/:id", properties.DeleteProperty)
+	return app
 }
 
 func main() {
-	log.Println("Starting Server...")
-	err := InitialiseDB()
+	err := initialiseDB()
 	if err != nil {
 		panic(err)
 	}
 	log.Println("Initialised DB")
-	r := initialiseRoutes()
-	srv := &http.Server{Addr: ":80", Handler: r, WriteTimeout: 15 * time.Second, ReadTimeout: 15 * time.Second}
-	log.Fatalln(srv.ListenAndServe())
+	app := initialiseRoutes()
+	log.Fatalln(app.Listen(":80"))
 }

@@ -1,12 +1,12 @@
 package properties
 
 import (
-	"encoding/json"
 	"fmt"
 	"net/http"
 
+	"github.com/BenHiramTaylor/go-property-management/database"
+	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -19,53 +19,52 @@ type Property struct {
 	PurchasePriceDollar uint   `json:"purchase_price_dollar"`
 }
 
-func GetDatabase() (*gorm.DB, error) {
-	db, err := gorm.Open(sqlite.Open("production.db"), &gorm.Config{})
-	if err != nil {
-		return &gorm.DB{}, fmt.Errorf("failed to connect database")
-	}
-	return db, nil
-}
-
-func GetAllProperties(w http.ResponseWriter, r *http.Request) {
-	db, err := GetDatabase()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-	}
+func GetAllProperties(c *fiber.Ctx) error {
 	var properties []Property
-	db.Table("Properties").Find(&properties)
-	jsonBytes, err := json.Marshal(properties)
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+	result := database.DBConn.Table("Properties").Find(&properties)
+	if result.Error != nil {
+		return result.Error
 	}
-	w.Write(jsonBytes)
+	return c.JSON(properties)
 }
 
-func AddProperty(w http.ResponseWriter, r *http.Request) {
-	db, err := GetDatabase()
-	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
-	}
+func AddProperty(c *fiber.Ctx) error {
 	var p Property
-	defer r.Body.Close()
-	err = json.NewDecoder(r.Body).Decode(&p)
+	err := c.BodyParser(&p)
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		return c.Status(503).JSON(err.Error())
 	}
 	p.ID, err = uuid.NewUUID()
 	if err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(err.Error()))
+		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
-	result := db.Table("Properties").Create(&p)
+	result := database.DBConn.Table("Properties").Create(&p)
 	if result.Error != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		w.Write([]byte(result.Error.Error()))
+		return result.Error
 	}
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Inserted Successfully"))
+	return c.JSON(p)
+}
+
+func GetIndividualProperty(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var p Property
+	result := database.DBConn.Table("Properties").Find(&p, "id = ?", id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return c.Status(404).JSON(fmt.Sprintf("Property not found with id: %v", id))
+	}
+	return c.JSON(p)
+}
+
+func DeleteProperty(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var p Property
+	result := database.DBConn.Table("Properties").Find(&p, "id = ?", id)
+	if result.Error != nil {
+		return result.Error
+	}
+	database.DBConn.Table("Properties").Delete(&p)
+	return c.JSON("Property Successfully Deleted")
 }
