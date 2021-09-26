@@ -11,7 +11,7 @@ import (
 )
 
 type Property struct {
-	gorm.Model
+	gorm.Model          `json:"-"`
 	ID                  uuid.UUID
 	PropertyType        string `json:"property_type"`
 	Address             string `json:"address"`
@@ -91,7 +91,6 @@ func UpdateProperty(c *fiber.Ctx) error {
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newP.ID = oldP.ID
-	newP.Model = oldP.Model
 	result = database.DBConn.Table("Properties").Model(&oldP).Updates(newP)
 	if result.Error != nil {
 		return result.Error

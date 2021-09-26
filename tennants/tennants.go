@@ -12,7 +12,7 @@ import (
 )
 
 type Tennant struct {
-	gorm.Model
+	gorm.Model  `json:"-"`
 	ID          uuid.UUID `json:"id"`
 	FirstName   string    `json:"first_name"`
 	MiddleName  string    `json:"middle_name"`
@@ -93,7 +93,6 @@ func UpdateTennant(c *fiber.Ctx) error {
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newT.ID = oldT.ID
-	newT.Model = oldT.Model
 	result = database.DBConn.Table("Tennants").Model(&oldT).Updates(newT)
 	if result.Error != nil {
 		return result.Error
