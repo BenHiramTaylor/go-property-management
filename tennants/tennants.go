@@ -93,6 +93,7 @@ func UpdateTennant(c *fiber.Ctx) error {
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newT.ID = oldT.ID
+	newT.Model = oldT.Model
 	result = database.DBConn.Table("Tennants").Model(&oldT).Updates(newT)
 	if result.Error != nil {
 		return result.Error

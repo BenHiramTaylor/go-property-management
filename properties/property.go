@@ -91,6 +91,7 @@ func UpdateProperty(c *fiber.Ctx) error {
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newP.ID = oldP.ID
+	newP.Model = oldP.Model
 	result = database.DBConn.Table("Properties").Model(&oldP).Updates(newP)
 	if result.Error != nil {
 		return result.Error
