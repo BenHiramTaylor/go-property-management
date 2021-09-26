@@ -12,11 +12,11 @@ import (
 
 type Property struct {
 	gorm.Model          `json:"-"`
-	ID                  uuid.UUID
-	PropertyType        string `json:"property_type"`
-	Address             string `json:"address"`
-	NumberOfBedrooms    uint   `json:"number_of_bedrooms"`
-	PurchasePriceDollar uint   `json:"purchase_price_dollar"`
+	ID                  uuid.UUID `json:"id"`
+	PropertyType        string    `json:"property_type"`
+	Address             string    `json:"address"`
+	NumberOfBedrooms    uint      `json:"number_of_bedrooms"`
+	PurchasePriceDollar uint      `json:"purchase_price_dollar"`
 }
 
 func GetAllProperties(c *fiber.Ctx) error {
