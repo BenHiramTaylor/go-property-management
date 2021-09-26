@@ -32,11 +32,11 @@ func AddProperty(c *fiber.Ctx) error {
 	var p Property
 	err := c.BodyParser(&p)
 	if err != nil {
-		return c.Status(503).JSON(err.Error())
+		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
 	p.ID, err = uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(err.Error())
 	}
 	result := database.DBConn.Table("Properties").Create(&p)
 	if result.Error != nil {
@@ -53,7 +53,7 @@ func GetIndividualProperty(c *fiber.Ctx) error {
 		return result.Error
 	}
 	if result.RowsAffected == 0 {
-		return c.Status(404).JSON(fmt.Sprintf("Property not found with id: %v", id))
+		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Property not found with id: %v", id))
 	}
 	return c.JSON(p)
 }
@@ -64,6 +64,9 @@ func DeleteProperty(c *fiber.Ctx) error {
 	result := database.DBConn.Table("Properties").Find(&p, "id = ?", id)
 	if result.Error != nil {
 		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Property not found with id: %v", id))
 	}
 	database.DBConn.Table("Properties").Delete(&p)
 	return c.JSON("Property Successfully Deleted")
