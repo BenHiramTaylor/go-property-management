@@ -71,3 +71,29 @@ func DeleteProperty(c *fiber.Ctx) error {
 	database.DBConn.Table("Properties").Delete(&p)
 	return c.JSON("Property Successfully Deleted")
 }
+
+func UpdateProperty(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var (
+		oldP Property
+		newP Property
+	)
+	result := database.DBConn.Table("Properties").Find(&oldP, "id = ?", id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Property not found with id: %v", id))
+	}
+	err := c.BodyParser(&newP)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(err.Error())
+	}
+	// SET NEW ID TO THE ID FROM THE URL
+	newP.ID = oldP.ID
+	result = database.DBConn.Table("Properties").Model(&oldP).Updates(newP)
+	if result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(&newP)
+}

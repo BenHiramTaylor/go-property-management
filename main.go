@@ -38,6 +38,7 @@ func initialiseRoutes() *fiber.App {
 	app.Get("/properties", properties.GetAllProperties)
 	app.Post("/properties", properties.AddProperty)
 	app.Get("/properties/:id", properties.GetIndividualProperty)
+	app.Put("/properties/:id", properties.UpdateProperty)
 	app.Delete("/properties/:id", properties.DeleteProperty)
 
 	// REGISTER TENNANT ENDPOINTS
