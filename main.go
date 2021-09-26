@@ -45,6 +45,7 @@ func initialiseRoutes() *fiber.App {
 	app.Get("/tennants", tennants.GetAllTennants)
 	app.Post("/tennants", tennants.AddTennant)
 	app.Get("/tennants/:id", tennants.GetIndividualTennant)
+	app.Put("/tennants/:id", tennants.UpdateTennant)
 	app.Delete("/tennants/:id", tennants.DeleteTennant)
 	return app
 }

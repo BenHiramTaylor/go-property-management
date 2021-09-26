@@ -73,3 +73,29 @@ func DeleteTennant(c *fiber.Ctx) error {
 	database.DBConn.Table("Tennants").Delete(&t)
 	return c.JSON("Tennant Successfully Deleted")
 }
+
+func UpdateTennant(c *fiber.Ctx) error {
+	id := c.Params("id")
+	var (
+		oldT Tennant
+		newT Tennant
+	)
+	result := database.DBConn.Table("Tennants").Find(&oldT, "id = ?", id)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected == 0 {
+		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Tennant not found with id: %v", id))
+	}
+	err := c.BodyParser(&newT)
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(err.Error())
+	}
+	// SET NEW ID TO THE ID FROM THE URL
+	newT.ID = oldT.ID
+	result = database.DBConn.Table("Tennants").Model(&oldT).Updates(newT)
+	if result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(&newT)
+}
