@@ -12,6 +12,7 @@ import (
 	"gorm.io/gorm"
 )
 
+// INITIALISE DATABASE AND TABLES
 func initialiseDB() error {
 	var err error
 	database.DBConn, err = gorm.Open(sqlite.Open("production.db"), &gorm.Config{})
@@ -30,11 +31,20 @@ func initialiseDB() error {
 }
 
 func initialiseRoutes() *fiber.App {
+	// CREATE APP WITH BASE CONFIG
 	app := fiber.New(fiber.Config{ReadTimeout: 60 * time.Second, WriteTimeout: 120 * time.Second, IdleTimeout: 12 * time.Hour})
+
+	// REGISTER PROPERTY ENDPOINTS
 	app.Get("/properties", properties.GetAllProperties)
 	app.Post("/properties", properties.AddProperty)
 	app.Get("/properties/:id", properties.GetIndividualProperty)
 	app.Delete("/properties/:id", properties.DeleteProperty)
+
+	// REGISTER TENNANT ENDPOINTS
+	app.Get("/tennants", tennants.GetAllTennants)
+	app.Post("/tennants", tennants.AddTennant)
+	app.Get("/tennants/:id", tennants.GetIndividualTennant)
+	app.Delete("/tennants/:id", tennants.DeleteTennant)
 	return app
 }
 
