@@ -2,6 +2,7 @@ package tennants
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -49,6 +50,7 @@ func AddTennant(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
+	log.Println(fmt.Sprintf("%#v", t))
 	t.ID, err = uuid.NewUUID()
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(err.Error())

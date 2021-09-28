@@ -2,6 +2,7 @@ package properties
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/BenHiramTaylor/go-property-management/database"
@@ -46,6 +47,7 @@ func AddProperty(c *fiber.Ctx) error {
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
+	log.Println(fmt.Sprintf("%#v", p))
 	p.ID, err = uuid.NewUUID()
 	if err != nil {
 		return c.Status(http.StatusInternalServerError).JSON(err.Error())
