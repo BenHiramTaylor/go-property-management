@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/BenHiramTaylor/go-property-management/database"
+	"github.com/BenHiramTaylor/go-property-management/properties"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -96,4 +97,22 @@ func UpdateTennant(c *fiber.Ctx) error {
 		return result.Error
 	}
 	return c.JSON(&newT)
+}
+
+func AssignTennantToProperty(c *fiber.Ctx) error {
+	tennantID := c.Params("tennantID")
+	propertyID := c.Params("propertyID")
+	p, err := properties.GetIndividualPropertyByID(propertyID)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
+	}
+	t, err := GetIndividualTennantByID(tennantID)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
+	}
+	result := database.DBConn.Table("Tennants").Model(&t).Update("PropertyID", p.ID)
+	if result.Error != nil {
+		return result.Error
+	}
+	return c.JSON(&t)
 }
