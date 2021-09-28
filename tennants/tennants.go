@@ -1,6 +1,7 @@
 package tennants
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -46,8 +47,9 @@ func GetAllTennants(c *fiber.Ctx) error {
 
 func AddTennant(c *fiber.Ctx) error {
 	var t Tennant
-	err := c.BodyParser(&t)
+	err := json.Unmarshal(c.Body(), &t)
 	if err != nil {
+		log.Println(err.Error())
 		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
 	log.Println(fmt.Sprintf("%#v", t))
