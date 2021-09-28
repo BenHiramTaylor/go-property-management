@@ -19,6 +19,18 @@ type Property struct {
 	PurchasePriceDollar uint      `json:"purchase_price_dollar"`
 }
 
+func GetIndividualPropertyByID(id string) (*Property, error) {
+	var p Property
+	result := database.DBConn.Table("Properties").Find(&p, "id = ?", id)
+	if result.Error != nil {
+		return &p, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return &p, fmt.Errorf("property not found with ID: %v", id)
+	}
+	return &p, nil
+}
+
 func GetAllProperties(c *fiber.Ctx) error {
 	var properties []Property
 	result := database.DBConn.Table("Properties").Find(&properties)
@@ -47,26 +59,18 @@ func AddProperty(c *fiber.Ctx) error {
 
 func GetIndividualProperty(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var p Property
-	result := database.DBConn.Table("Properties").Find(&p, "id = ?", id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Property not found with id: %v", id))
+	p, err := GetIndividualPropertyByID(id)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
 	}
 	return c.JSON(p)
 }
 
 func DeleteProperty(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var p Property
-	result := database.DBConn.Table("Properties").Find(&p, "id = ?", id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Property not found with id: %v", id))
+	p, err := GetIndividualPropertyByID(id)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
 	}
 	database.DBConn.Table("Properties").Delete(&p)
 	return c.JSON("Property Successfully Deleted")
@@ -74,24 +78,18 @@ func DeleteProperty(c *fiber.Ctx) error {
 
 func UpdateProperty(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var (
-		oldP Property
-		newP Property
-	)
-	result := database.DBConn.Table("Properties").Find(&oldP, "id = ?", id)
-	if result.Error != nil {
-		return result.Error
+	var newP Property
+	oldP, err := GetIndividualPropertyByID(id)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
 	}
-	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Property not found with id: %v", id))
-	}
-	err := c.BodyParser(&newP)
+	err = c.BodyParser(&newP)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newP.ID = oldP.ID
-	result = database.DBConn.Table("Properties").Model(&oldP).Updates(newP)
+	result := database.DBConn.Table("Properties").Model(&oldP).Updates(newP)
 	if result.Error != nil {
 		return result.Error
 	}
