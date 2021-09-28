@@ -21,9 +21,21 @@ type Tennant struct {
 	PropertyID  uuid.UUID `json:"property_id"`
 }
 
+func GetIndividualTennantByID(id string) (*Tennant, error) {
+	var t Tennant
+	result := database.DBConn.Table("Tennants").Find(&t, "id = ?", id)
+	if result.Error != nil {
+		return &t, result.Error
+	}
+	if result.RowsAffected == 0 {
+		return &t, fmt.Errorf("tennant not found with ID: %v", id)
+	}
+	return &t, nil
+}
+
 func GetAllTennants(c *fiber.Ctx) error {
 	var tennants []Tennant
-	result := database.DBConn.Table("Properties").Find(&tennants)
+	result := database.DBConn.Table("Tennants").Find(&tennants)
 	if result.Error != nil {
 		return result.Error
 	}
@@ -49,26 +61,18 @@ func AddTennant(c *fiber.Ctx) error {
 
 func GetIndividualTennant(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var t Tennant
-	result := database.DBConn.Table("Tennants").Find(&t, "id = ?", id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Tennant not found with id: %v", id))
+	t, err := GetIndividualTennantByID(id)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
 	}
 	return c.JSON(t)
 }
 
 func DeleteTennant(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var t Tennant
-	result := database.DBConn.Table("Tennants").Find(&t, "id = ?", id)
-	if result.Error != nil {
-		return result.Error
-	}
-	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Tennant not found with id: %v", id))
+	t, err := GetIndividualTennantByID(id)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
 	}
 	database.DBConn.Table("Tennants").Delete(&t)
 	return c.JSON("Tennant Successfully Deleted")
@@ -76,24 +80,18 @@ func DeleteTennant(c *fiber.Ctx) error {
 
 func UpdateTennant(c *fiber.Ctx) error {
 	id := c.Params("id")
-	var (
-		oldT Tennant
-		newT Tennant
-	)
-	result := database.DBConn.Table("Tennants").Find(&oldT, "id = ?", id)
-	if result.Error != nil {
-		return result.Error
+	var newT Tennant
+	oldT, err := GetIndividualTennantByID(id)
+	if err != nil {
+		return c.Status(http.StatusNotFound).JSON(err.Error())
 	}
-	if result.RowsAffected == 0 {
-		return c.Status(http.StatusNotFound).JSON(fmt.Sprintf("Tennant not found with id: %v", id))
-	}
-	err := c.BodyParser(&newT)
+	err = c.BodyParser(&newT)
 	if err != nil {
 		return c.Status(http.StatusBadRequest).JSON(err.Error())
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newT.ID = oldT.ID
-	result = database.DBConn.Table("Tennants").Model(&oldT).Updates(newT)
+	result := database.DBConn.Table("Tennants").Model(&oldT).Updates(newT)
 	if result.Error != nil {
 		return result.Error
 	}
