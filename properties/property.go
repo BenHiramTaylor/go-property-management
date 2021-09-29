@@ -6,18 +6,24 @@ import (
 	"net/http"
 
 	"github.com/BenHiramTaylor/go-property-management/database"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
 
 type Property struct {
-	gorm.Model          `json:"-"`
-	ID                  uuid.UUID `json:"id"`
-	PropertyType        string    `json:"property_type"`
-	Address             string    `json:"address"`
-	NumberOfBedrooms    uint      `json:"number_of_bedrooms"`
-	PurchasePriceDollar uint      `json:"purchase_price_dollar"`
+	gorm.Model       `json:"-"`
+	ID               uuid.UUID `json:"id" validate:"required"`
+	PropertyType     string    `json:"property_type" validate:"required"`
+	Address          string    `json:"address" validate:"required"`
+	NumberOfBedrooms uint      `json:"number_of_bedrooms" validate:"required"`
+	PurchasePriceGBP uint      `json:"purchase_price_gbp" validate:"required"`
+}
+
+func (p *Property) validate() error {
+	v := validator.New()
+	return v.Struct(p)
 }
 
 func GetIndividualPropertyByID(id string) (*Property, error) {
@@ -45,12 +51,16 @@ func AddProperty(c *fiber.Ctx) error {
 	var p Property
 	err := c.BodyParser(&p)
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	log.Println(fmt.Sprintf("%#v", p))
 	p.ID, err = uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	err = p.validate()
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	result := database.DBConn.Table("Properties").Create(&p)
 	if result.Error != nil {
@@ -63,7 +73,7 @@ func GetIndividualProperty(c *fiber.Ctx) error {
 	id := c.Params("id")
 	p, err := GetIndividualPropertyByID(id)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(p)
 }
@@ -72,7 +82,7 @@ func DeleteProperty(c *fiber.Ctx) error {
 	id := c.Params("id")
 	p, err := GetIndividualPropertyByID(id)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	database.DBConn.Table("Properties").Delete(&p)
 	return c.JSON("Property Successfully Deleted")
@@ -83,11 +93,11 @@ func UpdateProperty(c *fiber.Ctx) error {
 	var newP Property
 	oldP, err := GetIndividualPropertyByID(id)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	err = c.BodyParser(&newP)
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newP.ID = oldP.ID

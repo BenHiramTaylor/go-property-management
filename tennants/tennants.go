@@ -9,6 +9,7 @@ import (
 
 	"github.com/BenHiramTaylor/go-property-management/database"
 	"github.com/BenHiramTaylor/go-property-management/properties"
+	"github.com/go-playground/validator/v10"
 	"github.com/gofiber/fiber/v2"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
@@ -16,12 +17,17 @@ import (
 
 type Tennant struct {
 	gorm.Model  `json:"-"`
-	ID          uuid.UUID `json:"id"`
-	FirstName   string    `json:"first_name"`
+	ID          uuid.UUID `json:"id" validate:"required"`
+	FirstName   string    `json:"first_name" validate:"required"`
 	MiddleName  string    `json:"middle_name"`
-	LastName    string    `json:"last_name"`
+	LastName    string    `json:"last_name" validate:"required"`
 	DateOfBirth time.Time `json:"date_of_birth"`
 	PropertyID  uuid.UUID `json:"property_id"`
+}
+
+func (t *Tennant) validate() error {
+	v := validator.New()
+	return v.Struct(t)
 }
 
 func GetIndividualTennantByID(id string) (*Tennant, error) {
@@ -50,12 +56,16 @@ func AddTennant(c *fiber.Ctx) error {
 	err := json.Unmarshal(c.Body(), &t)
 	if err != nil {
 		log.Println(err.Error())
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	log.Println(fmt.Sprintf("%#v", t))
 	t.ID, err = uuid.NewUUID()
 	if err != nil {
-		return c.Status(http.StatusInternalServerError).JSON(err.Error())
+		return c.Status(http.StatusInternalServerError).JSON(fiber.Map{"error": err.Error()})
+	}
+	err = t.validate()
+	if err != nil {
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	result := database.DBConn.Table("Tennants").Create(&t)
 	if result.Error != nil {
@@ -68,7 +78,7 @@ func GetIndividualTennant(c *fiber.Ctx) error {
 	id := c.Params("id")
 	t, err := GetIndividualTennantByID(id)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	return c.JSON(t)
 }
@@ -77,7 +87,7 @@ func DeleteTennant(c *fiber.Ctx) error {
 	id := c.Params("id")
 	t, err := GetIndividualTennantByID(id)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	database.DBConn.Table("Tennants").Delete(&t)
 	return c.JSON("Tennant Successfully Deleted")
@@ -88,11 +98,11 @@ func UpdateTennant(c *fiber.Ctx) error {
 	var newT Tennant
 	oldT, err := GetIndividualTennantByID(id)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	err = c.BodyParser(&newT)
 	if err != nil {
-		return c.Status(http.StatusBadRequest).JSON(err.Error())
+		return c.Status(http.StatusBadRequest).JSON(fiber.Map{"error": err.Error()})
 	}
 	// SET NEW ID TO THE ID FROM THE URL
 	newT.ID = oldT.ID
@@ -108,11 +118,11 @@ func AssignTennantToProperty(c *fiber.Ctx) error {
 	propertyID := c.Params("propertyID")
 	p, err := properties.GetIndividualPropertyByID(propertyID)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	t, err := GetIndividualTennantByID(tennantID)
 	if err != nil {
-		return c.Status(http.StatusNotFound).JSON(err.Error())
+		return c.Status(http.StatusNotFound).JSON(fiber.Map{"error": err.Error()})
 	}
 	result := database.DBConn.Table("Tennants").Model(&t).Update("PropertyID", p.ID)
 	if result.Error != nil {
