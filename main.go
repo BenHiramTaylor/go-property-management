@@ -7,6 +7,7 @@ import (
 	"github.com/BenHiramTaylor/go-property-management/database"
 	"github.com/BenHiramTaylor/go-property-management/properties"
 	"github.com/BenHiramTaylor/go-property-management/tennants"
+	"github.com/BenHiramTaylor/go-property-management/users"
 	"github.com/gofiber/fiber/v2"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
@@ -24,6 +25,10 @@ func initialiseDB() error {
 		return err
 	}
 	err = database.DBConn.Table("Tennants").AutoMigrate(&tennants.Tennant{})
+	if err != nil {
+		return err
+	}
+	err = database.DBConn.Table("Users").AutoMigrate(&users.User{})
 	if err != nil {
 		return err
 	}
@@ -48,6 +53,9 @@ func initialiseRoutes() *fiber.App {
 	app.Put("/tennants/:id", tennants.UpdateTennant)
 	app.Delete("/tennants/:id", tennants.DeleteTennant)
 	app.Post("/tennants/:tennantID/properties/:propertyID", tennants.AssignTennantToProperty)
+
+	// REGISTER USER ENDPOINTS
+	app.Post("/users", users.AddUser)
 	return app
 }
 
