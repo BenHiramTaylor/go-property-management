@@ -9,6 +9,7 @@ import (
 	"github.com/BenHiramTaylor/go-property-management/tennants"
 	"github.com/BenHiramTaylor/go-property-management/users"
 	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/basicauth"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
@@ -38,6 +39,9 @@ func initialiseDB() error {
 func initialiseRoutes() *fiber.App {
 	// CREATE APP WITH BASE CONFIG
 	app := fiber.New(fiber.Config{ReadTimeout: 60 * time.Second, WriteTimeout: 120 * time.Second, IdleTimeout: 12 * time.Hour})
+
+	// ADD AUTHENTICATION MIDDLEWARE
+	app.Use(basicauth.New(basicauth.Config{Authorizer: users.CheckAuth}))
 
 	// REGISTER PROPERTY ENDPOINTS
 	app.Get("/properties", properties.GetAllProperties)
