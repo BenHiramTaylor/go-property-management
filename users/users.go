@@ -104,6 +104,29 @@ func CheckAuth(username, password string) bool {
 	return true
 }
 
+// CreateDefaultAdmin Creates sys_admin account if it doesn't already exist
+func CreateDefaultAdmin(username, password string) error {
+	adminExists := checkIfUserExists("sys_admin")
+	if adminExists {
+		return nil
+	}
+	var err error
+	sysAdmin := User{Username: username, FirstName: "System", LastName: "Admin", Email: "sys_admin@ecorp.com", Password: password}
+	sysAdmin.ID, err = uuid.NewUUID()
+	if err != nil {
+		return err
+	}
+	err = sysAdmin.hashPassword()
+	if err != nil {
+		return err
+	}
+	result := database.DBConn.Table("Users").Create(&sysAdmin)
+	if result.Error != nil {
+		return result.Error
+	}
+	return nil
+}
+
 // AddUser Takes a fiber context, and creates a new User in the DB via a post request, or returns an error to the client
 func AddUser(c *fiber.Ctx) error {
 	var newUser User
