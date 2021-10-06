@@ -16,12 +16,12 @@ import (
 type User struct {
 	gorm.Model `json:"-"`
 	ID         uuid.UUID `json:"id" validate:"required"`
-	Username   string    `json:"username" validate:"required"`
+	Username   string    `json:"username" validate:"required" gorm:"unique,not null"`
 	FirstName  string    `json:"first_name" validate:"required"`
 	MiddleName string    `json:"middle_name,omitempty"`
 	LastName   string    `json:"last_name" validate:"required"`
 	Email      string    `json:"email" validate:"required,email"`
-	Password   string    `json:"password" validate:"required,min=8"`
+	Password   string    `json:"password" validate:"required,min=8" gorm:"not null"`
 }
 
 // UserResponse Is a struct simply for returning different user fields after a successful reqeust,
