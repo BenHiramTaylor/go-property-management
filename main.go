@@ -17,21 +17,20 @@ import (
 // INITIALISE DATABASE AND TABLES
 func initialiseDB() error {
 	var err error
+	var tables = map[string]interface{}{
+		"Properties": &properties.Property{},
+		"Tennants":   &tennants.Tennant{},
+		"Users":      &users.User{},
+	}
 	database.DBConn, err = gorm.Open(sqlite.Open("production.db"), &gorm.Config{})
 	if err != nil {
 		return err
 	}
-	err = database.DBConn.Table("Properties").AutoMigrate(&properties.Property{})
-	if err != nil {
-		return err
-	}
-	err = database.DBConn.Table("Tennants").AutoMigrate(&tennants.Tennant{})
-	if err != nil {
-		return err
-	}
-	err = database.DBConn.Table("Users").AutoMigrate(&users.User{})
-	if err != nil {
-		return err
+	for table, schema := range tables {
+		err = database.DBConn.Table(table).AutoMigrate(schema)
+		if err != nil {
+			return err
+		}
 	}
 	err = users.CreateDefaultAdmin("sys_admin", "MrR0b0t123$")
 	if err != nil {
